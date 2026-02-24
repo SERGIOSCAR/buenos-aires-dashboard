@@ -99,17 +99,35 @@ if st.button("Generate Report"):
             response = requests.get(SVG_SOURCE_URL, timeout=30)
             response.raise_for_status()
 
-            svg_modified = modify_svg(response.text)
+# Wrap SVG inside controlled container
+styled_svg = f"""
+<div style="
+    display:flex;
+    justify-content:center;
+    width:100%;
+">
+    <div style="
+        width:1000px;
+        border-radius:12px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.08);
+        overflow:hidden;
+        background:white;
+        padding:10px;
+    ">
+        {svg_modified}
+    </div>
+</div>
+"""
 
-            # Proper SVG rendering (clean, no raw XML dump)
-            st.components.v1.html(svg_modified, height=900, scrolling=True)
+st.components.v1.html(styled_svg, height=600, scrolling=True)
 
-            st.download_button(
-                label="Download SVG Report",
-                data=svg_modified,
-                file_name="Buenos_Aires_Draft_Report.svg",
-                mime="image/svg+xml"
-            )
+st.download_button(
+    label="Download Report (SVG)",
+    data=svg_modified,
+    file_name="Buenos_Aires_Draft_Report.svg",
+    mime="image/svg+xml"
+)
 
         except Exception as e:
             st.error(f"Error generating report: {e}")
+
