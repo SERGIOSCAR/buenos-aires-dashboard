@@ -1,10 +1,13 @@
 import streamlit as st
-import os
 import re
 import requests
 
-# --- CONFIGURATION & DATA (From your original file) ---
+# -------------------------------
+# CONFIGURATION
+# -------------------------------
+
 SVG_SOURCE_URL = "https://api.shn.gob.ar/imagenes-modelo/curvas_altura-total/Alturatotal_Palermo.svg"
+
 DRAFT_BY_TIDE = {
     -0.1: 7.30, 0.0: 7.40, 0.1: 7.50, 0.2: 7.60, 0.3: 7.70,
     0.4: 7.80, 0.5: 7.90, 0.6: 8.00, 0.7: 8.10, 0.8: 8.20,
@@ -15,63 +18,98 @@ DRAFT_BY_TIDE = {
 
 TOLERANCE = 0.051
 
-# --- LOGIC FUNCTIONS (Unchanged from your file) ---
+# -------------------------------
+# LOGIC FUNCTIONS
+# -------------------------------
+
 def parse_tick(raw):
     raw = raw.strip().replace(",", ".")
-    if raw.endswith("m"): raw = raw[:-1]
-    try: return float(raw)
-    except: return None
+    if raw.endswith("m"):
+        raw = raw[:-1]
+    try:
+        return float(raw)
+    except:
+        return None
+
 
 def snap_to_key(v):
-    best, err = None, 999
+    best = None
+    err = 999
     for k in DRAFT_BY_TIDE:
         e = abs(v - k)
-        if e < err: best, err = k, e
+        if e < err:
+            best = k
+            err = e
     return best if err <= TOLERANCE else None
 
+
 def modify_svg(svg):
-    text_re = re.compile(r'(<text[^>]*x=["\']-5["\'][^>]*y=["\']([\d.]+)[^>]*>)(.*?)(</text>)')
+    text_re = re.compile(
+        r'(<text[^>]*x=["\']-5["\'][^>]*y=["\']([\d.]+)[^>]*>)(.*?)(</text>)'
+    )
+
     out = svg
+
     for full, y, raw, _ in text_re.findall(svg):
         tide = parse_tick(raw)
-        if tide is None: continue
+        if tide is None:
+            continue
+
         key = snap_to_key(tide)
-        if key is None: continue
+        if key is None:
+            continue
+
         draft = DRAFT_BY_TIDE[key]
-        repl = f'<text x="115" y="{y}" text-anchor="end" font-size="20" fill="blue">Tide {key:.1f} = Draft with Gangway {draft:.2f} m</text>'
-        out = out.replace(full + raw + "</text>", repl)
-    
-    new_title = "BUENOS AIRES Wind Corrected Tides with Drafts"
-    out = re.sub(r"Altura del nivel del agua.*?\)", new_title, out, flags=re.DOTALL | re.IGNORECASE)
+
+        replacement = (
+            f'<text x="115" y="{y}" '
+            f'text-anchor="end" font-size="20" fill="blue">'
+            f'Tide {key:.1f} = Draft with Gangway {draft:.2f} m'
+            f'</text>'
+        )
+
+        out = out.replace(full + raw + "</text>", replacement)
+
+    # Replace title text inside SVG
+    new_title = "BUENOS AIRES Wind Corrected Tides with Sailing Drafts"
+    out = re.sub(
+        r"Altura del nivel del agua.*?\)",
+        new_title,
+        out,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+
     return out
 
-# --- STREAMLIT UI ---
+
+# -------------------------------
+# STREAMLIT UI
+# -------------------------------
+
+st.set_page_config(page_title="Buenos Aires Draft Calculator", layout="wide")
+
 st.title("🚢 Buenos Aires Draft Calculator")
 st.write("Click below to fetch the latest SHN data and apply sailing drafts.")
-if st.button('Generate Report'):
-    with st.spinner('Fetching and converting data...'):
+
+if st.button("Generate Report"):
+
+    with st.spinner("Fetching latest SHN data..."):
+
         try:
-            # 1. Get SVG
-            r = requests.get(SVG_SOURCE_URL, timeout=30)
-            r.raise_for_status()
-            
-            # 2. Modify SVG
-            svg_final = modify_svg(r.text)
-            st.markdown(svg_final, unsafe_allow_html=True)
+            response = requests.get(SVG_SOURCE_URL, timeout=30)
+            response.raise_for_status()
+
+            svg_modified = modify_svg(response.text)
+
+            # Proper SVG rendering (clean, no raw XML dump)
+            st.components.v1.html(svg_modified, height=900, scrolling=True)
 
             st.download_button(
-               "Download SVG Report",
-                svg_final,
-                "Buenos_Aires.svg",
-                "image/svg+xml"
-)
-           
-            # 4. Show Result
-            st.image(img_bytes, caption="Updated Oyarbide Forecast")
-            st.download_button("Download Report (PNG)", img_bytes, "Punta_Indio.png", "image/png")
-            
+                label="Download SVG Report",
+                data=svg_modified,
+                file_name="Buenos_Aires_Draft_Report.svg",
+                mime="image/svg+xml"
+            )
+
         except Exception as e:
-
-            st.error(f"Error: {e}")
-
-
+            st.error(f"Error generating report: {e}")
