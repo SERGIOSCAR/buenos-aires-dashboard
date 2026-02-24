@@ -57,17 +57,15 @@ if st.button('Generate Report'):
             
             # 2. Modify SVG
             svg_final = modify_svg(r.text)
-            
-            # 3. Create PNG via Playwright
-            html_content = f"<html><body style='margin:0'>{svg_final}</body></html>"
-            
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page(viewport={"width": 1400, "height": 1000})
-                page.set_content(html_content)
-                img_bytes = page.screenshot(full_page=True)
-                browser.close()
-            
+            st.markdown(svg_final, unsafe_allow_html=True)
+
+            st.download_button(
+               "Download SVG Report",
+                svg_final,
+                "Buenos_Aires.svg",
+                "image/svg+xml"
+)
+           
             # 4. Show Result
             st.image(img_bytes, caption="Updated Oyarbide Forecast")
             st.download_button("Download Report (PNG)", img_bytes, "Punta_Indio.png", "image/png")
@@ -75,4 +73,5 @@ if st.button('Generate Report'):
         except Exception as e:
 
             st.error(f"Error: {e}")
+
 
