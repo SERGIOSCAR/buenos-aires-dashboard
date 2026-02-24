@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import re
 import requests
-from playwright.sync_api import sync_playwright
 
 # --- CONFIGURATION & DATA (From your original file) ---
 SVG_SOURCE_URL = "https://api.shn.gob.ar/imagenes-modelo/curvas_altura-total/Alturatotal_Palermo.svg"
@@ -76,3 +75,4 @@ if st.button('Generate Report'):
         except Exception as e:
 
             st.error(f"Error: {e}")
+
