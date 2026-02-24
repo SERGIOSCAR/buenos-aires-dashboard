@@ -19,7 +19,7 @@ DRAFT_BY_TIDE = {
 TOLERANCE = 0.051
 
 # -------------------------------
-# LOGIC FUNCTIONS
+# LOGIC
 # -------------------------------
 
 def parse_tick(raw):
@@ -70,8 +70,8 @@ def modify_svg(svg):
 
         out = out.replace(full + raw + "</text>", replacement)
 
-    # Replace title text inside SVG
     new_title = "BUENOS AIRES Wind Corrected Tides with Sailing Drafts"
+
     out = re.sub(
         r"Altura del nivel del agua.*?\)",
         new_title,
@@ -99,35 +99,36 @@ if st.button("Generate Report"):
             response = requests.get(SVG_SOURCE_URL, timeout=30)
             response.raise_for_status()
 
-# Wrap SVG inside controlled container
-styled_svg = f"""
-<div style="
-    display:flex;
-    justify-content:center;
-    width:100%;
-">
-    <div style="
-        width:1000px;
-        border-radius:12px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.08);
-        overflow:hidden;
-        background:white;
-        padding:10px;
-    ">
-        {svg_modified}
-    </div>
-</div>
-"""
+            svg_modified = modify_svg(response.text)
 
-st.components.v1.html(styled_svg, height=600, scrolling=True)
+            # Styled container to control size and keep it professional
+            styled_svg = f"""
+            <div style="
+                display:flex;
+                justify-content:center;
+                width:100%;
+            ">
+                <div style="
+                    width:1000px;
+                    border-radius:12px;
+                    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+                    overflow:hidden;
+                    background:white;
+                    padding:10px;
+                ">
+                    {svg_modified}
+                </div>
+            </div>
+            """
 
-st.download_button(
-    label="Download Report (SVG)",
-    data=svg_modified,
-    file_name="Buenos_Aires_Draft_Report.svg",
-    mime="image/svg+xml"
-)
+            st.components.v1.html(styled_svg, height=600, scrolling=True)
+
+            st.download_button(
+                label="Download Report (SVG)",
+                data=svg_modified,
+                file_name="Buenos_Aires_Draft_Report.svg",
+                mime="image/svg+xml"
+            )
 
         except Exception as e:
             st.error(f"Error generating report: {e}")
-
