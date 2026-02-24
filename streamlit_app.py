@@ -49,8 +49,6 @@ def modify_svg(svg):
 # --- STREAMLIT UI ---
 st.title("🚢 Buenos Aires Draft Calculator")
 st.write("Click below to fetch the latest SHN data and apply sailing drafts.")
-import subprocess
-subprocess.run(["playwright", "install", "chromium"])
 if st.button('Generate Report'):
     with st.spinner('Fetching and converting data...'):
         try:
@@ -76,4 +74,5 @@ if st.button('Generate Report'):
             st.download_button("Download Report (PNG)", img_bytes, "Punta_Indio.png", "image/png")
             
         except Exception as e:
+
             st.error(f"Error: {e}")
